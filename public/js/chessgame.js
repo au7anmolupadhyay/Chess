@@ -1,4 +1,4 @@
-const socket = io(); // connection event fire automatically for backend when server is running
+const socket = io(); // Connects to backend automatically
 const chess = new Chess();
 
 const boardElement = document.querySelector(".chessboard");
@@ -8,7 +8,7 @@ let playerRole = null;
 
 const renderBoard = () => {
   const board = chess.board();
-  boardElement.innerHTML = ""; //clear the board
+  boardElement.innerHTML = "";
 
   board.forEach((row, rowIndex) => {
     row.forEach((square, squareIndex) => {
@@ -34,14 +34,14 @@ const renderBoard = () => {
         pieceElement.addEventListener("dragstart", (e) => {
           if (pieceElement.draggable) {
             draggedPiece = pieceElement;
-            sourceSquare = {row: rowIndex, col: squareIndex};
-            e.dataTransfer.setData("text/plain", ""); // to prevent any default behavior on cross platforms
+            sourceSquare = { row: rowIndex, col: squareIndex };
+            e.dataTransfer.setData("text/plain", "");
           }
         });
 
-        pieceElement.addEventListener("dragend", (e) => {
-            draggedPiece = null;
-            sourceSquare = null;
+        pieceElement.addEventListener("dragend", () => {
+          draggedPiece = null;
+          sourceSquare = null;
         });
 
         squareElement.appendChild(pieceElement);
@@ -53,22 +53,34 @@ const renderBoard = () => {
 
       squareElement.addEventListener("drop", (e) => {
         e.preventDefault();
-        if(draggedPiece){
-            const targetSquare = {
-                row: parseInt(squareElement.target.dataset.row),
-                col: parseInt(squareElement.target.dataset.col),
-            };
-            
-            handleMove(sourceSquare, targetSquare);
+        if (draggedPiece) {
+          const targetSquare = {
+            row: parseInt(e.currentTarget.dataset.row),
+            col: parseInt(e.currentTarget.dataset.col),
+          };
+          handleMove(sourceSquare, targetSquare);
         }
       });
 
       boardElement.appendChild(squareElement);
     });
   });
+
+  if (playerRole === "b") {
+    boardElement.classList.add("flipped");
+  } else {
+    boardElement.classList.remove("flipped");
+  }
 };
 
-const handleMove = () => {};
+const handleMove = (source, target) => {
+  const move = {
+    from: `${String.fromCharCode(97 + source.col)}${8 - source.row}`,
+    to: `${String.fromCharCode(97 + target.col)}${8 - target.row}`,
+    promotion: "q",
+  };
+  socket.emit("move", move);
+};
 
 const getPieceUnicode = (piece) => {
   const unicodePieces = {
@@ -85,8 +97,33 @@ const getPieceUnicode = (piece) => {
     N: "♞",
     P: "♟",
   };
-
-  return unicodePieces[piece.type] || "";
+  return unicodePieces[piece.color === "w" ? piece.type : piece.type.toUpperCase()] || "";
 };
+
+// Socket events
+socket.on("playerRole", (role) => {
+  playerRole = role;
+  renderBoard();
+});
+
+socket.on("spectatorRole", () => {
+  playerRole = null;
+  renderBoard();
+});
+
+socket.on("boardState", (fen) => {
+  chess.load(fen);
+  renderBoard();
+});
+
+socket.on("move", (move) => {
+  console.log("Move received:", move);
+  chess.move(move);
+  renderBoard();
+});
+
+socket.on("error", (message) => {
+  alert(message);
+});
 
 renderBoard();
