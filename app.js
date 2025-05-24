@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socket(server);
 
-const chess = new Chess();
+const chess = new Chess(); 
 
 let players = {};
 let currentPlayer = "W";
@@ -22,6 +22,10 @@ app.get('/', (req, res) => {
 
 io.on('connection', (uniqueSocket) => {
     console.log('New connection', uniqueSocket.id);
+
+    uniqueSocket.on("Football", function(){
+        console.log("football game is going to start");
+    })
 });
     
 
