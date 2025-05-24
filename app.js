@@ -48,11 +48,9 @@ io.on("connection", (uniqueSocket) => {
 
     try {
       if (chess.turn() === "w" && uniqueSocket.id !== players.white) {
-        uniqueSocket.emit("error", "It's not your turn");
         return;
       }
       if (chess.turn() === "b" && uniqueSocket.id !== players.black) {
-        uniqueSocket.emit("error", "It's not your turn");
         return;
       }
 
